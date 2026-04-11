@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  /* This tells Tailwind v4 how to handle the names used in your components */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-primary: hsl(var(--primary));
+  --color-accent: hsl(var(--accent));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+}
+
+@layer base {
+  :root {
+    /* Values must be space-separated for Tailwind v4 HSL mapping */
+    --background: 225 25% 97%;
+    --foreground: 230 25% 10%;
+    --card: 0 0% 100%;
+    --primary: 252 85% 60%;
+    --muted: 225 15% 94%;
+    --muted-foreground: 225 10% 50%;
+    --accent: 170 75% 45%;
+    --border: 225 15% 90%;
+    
+    --sidebar-background: 230 25% 10%;
+    --sidebar-foreground: 225 15% 80%;
+    --sidebar-primary: 252 85% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 20% 16%;
+    --sidebar-border: 230 20% 18%;
+  }
+
+  * {
+    /* This fixes the 'border-border' crash */
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Custom Utilities for your interactive elements */
+@layer utilities {
+  .glass {
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border));
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(252 85% 60%), hsl(280 80% 55%));
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(252 85% 60%), hsl(280 80% 55%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
