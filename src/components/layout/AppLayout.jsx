@@ -1,42 +1,188 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import Sidebar from "./Sidebar";
-import { ChevronDown, UserCog, LogOut, User } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Users, 
+  Settings, 
+  PlusCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown, 
+  UserCog, 
+  LogOut, 
+  User,
+  Menu,
+  X
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const userData = {
     name: "John Doe",
+    email: "john@example.com",
     initials: "JD",
   };
 
+  const menuItems = [
+    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/dashboard/create", icon: PlusCircle, label: "Create Invoice" },
+    { path: "/dashboard/invoices", icon: FileText, label: "Invoices" },
+    { path: "/dashboard/clients", icon: Users, label: "Clients" },
+    { path: "/dashboard/profile", icon: User, label: "Profile" },
+    { path: "/dashboard/settings", icon: Settings, label: "Settings" },
+  ];
+
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setCollapsed(true);
+      }
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const handleLogout = () => {
+    // Close menus
+    setUserMenuOpen(false);
+    setMobileSidebarOpen(false);
+    
+    // Clear authentication
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userData");
+    
+    // Show success message
+    toast.success("Logged out successfully");
+    
+    // Force reload and redirect to landing page
+    window.location.href = "/";
+  };
+
+  const isActive = (path) => {
+    if (path === "/dashboard" && location.pathname === "/dashboard") return true;
+    if (path !== "/dashboard" && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
   const sidebarWidth = collapsed ? 80 : 260;
 
   return (
     <div className="min-h-screen bg-slate-50">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
-        * { font-family: 'DM Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
       `}</style>
 
-      {/* Sidebar */}
-      <Sidebar 
-        collapsed={collapsed} 
-        onToggle={() => setCollapsed(!collapsed)} 
-      />
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <motion.aside
+          initial={false}
+          animate={{ width: sidebarWidth }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="fixed left-0 top-0 h-full bg-white border-r border-slate-200 z-40 flex flex-col shadow-sm"
+        >
+          {/* Logo */}
+          <div className="h-16 flex items-center px-4 border-b border-slate-100">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <FileText className="w-5 h-5 text-white" />
+              </div>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent whitespace-nowrap"
+                >
+                  InvoicePro
+                </motion.span>
+              )}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 py-6 px-3 overflow-y-auto">
+            <div className="space-y-1.5">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.path);
+                
+                return (
+                  <Link key={item.path} to={item.path}>
+                    <motion.div
+                      whileHover={{ x: collapsed ? 0 : 3 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+                        ${active 
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
+                          : 'text-slate-600 hover:bg-slate-100'
+                        }
+                        ${collapsed ? 'justify-center' : ''}
+                      `}
+                    >
+                      <Icon size={20} className="flex-shrink-0" />
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="font-medium text-sm whitespace-nowrap"
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </motion.div>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* User Info & Toggle */}
+          <div className="border-t border-slate-100 p-3">
+            {!collapsed && (
+              <div className="mb-3 px-2 py-2 bg-slate-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    {userData.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 truncate">{userData.name}</p>
+                    <p className="text-xs text-slate-500 truncate">{userData.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="w-full flex items-center justify-center p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              {collapsed ? (
+                <ChevronRight size={18} className="text-slate-600" />
+              ) : (
+                <ChevronLeft size={18} className="text-slate-600" />
+              )}
+            </button>
+          </div>
+        </motion.aside>
+      )}
 
       {/* Main Content */}
       <motion.main
@@ -48,10 +194,22 @@ export default function AppLayout() {
         className="min-h-screen flex flex-col"
       >
         {/* Header */}
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b border-slate-200">
           <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
-            {/* Left section - empty for spacing */}
-            <div className="w-8"></div>
+            {/* Left section */}
+            <div className="flex items-center gap-3">
+              {isMobile && (
+                <button
+                  onClick={() => setMobileSidebarOpen(true)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <Menu size={20} className="text-slate-700" />
+                </button>
+              )}
+              <h1 className="text-xl font-semibold text-slate-800 hidden sm:block">
+                {menuItems.find(item => isActive(item.path))?.label || "Dashboard"}
+              </h1>
+            </div>
 
             {/* Right section - User Menu */}
             <div className="relative">
@@ -59,14 +217,14 @@ export default function AppLayout() {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:border-indigo-200 hover:shadow-sm transition-all"
               >
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
                   {userData.initials}
                 </div>
                 <span className="hidden sm:block text-sm font-semibold text-slate-700">
                   {userData.name}
                 </span>
                 <ChevronDown
-                  size={14}
+                  size={16}
                   className={`text-slate-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`}
                 />
               </button>
@@ -83,18 +241,25 @@ export default function AppLayout() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-12 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden"
+                      className="absolute right-0 top-12 w-56 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden"
                     >
-                      <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="block">
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <p className="text-sm font-semibold text-slate-800">{userData.name}</p>
+                        <p className="text-xs text-slate-500">{userData.email}</p>
+                      </div>
+                      <Link to="/dashboard/profile" onClick={() => setUserMenuOpen(false)} className="block">
                         <DropdownItem icon={User} label="My Profile" />
                       </Link>
-                      <Link to="/settings" onClick={() => setUserMenuOpen(false)} className="block">
+                      <Link to="/dashboard/settings" onClick={() => setUserMenuOpen(false)} className="block">
                         <DropdownItem icon={UserCog} label="Account Settings" />
                       </Link>
                       <div className="h-px bg-slate-100 my-1" />
-                      <Link to="/logout" onClick={() => setUserMenuOpen(false)} className="block">
+                      <button 
+                        onClick={handleLogout}
+                        className="block w-full"
+                      >
                         <DropdownItem icon={LogOut} label="Sign Out" danger />
-                      </Link>
+                      </button>
                     </motion.div>
                   </>
                 )}
@@ -110,6 +275,100 @@ export default function AppLayout() {
           </div>
         </div>
       </motion.main>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobile && mobileSidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-40"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 30 }}
+              className="fixed left-0 top-0 h-full w-72 z-50 bg-white shadow-xl"
+            >
+              <div className="h-full flex flex-col">
+                {/* Mobile Sidebar Header */}
+                <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      InvoicePro
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-slate-600" />
+                  </button>
+                </div>
+
+                {/* Mobile Navigation */}
+                <nav className="flex-1 py-6 px-3 overflow-y-auto">
+                  <div className="space-y-1.5">
+                    {menuItems.map((item) => {
+                      const Icon = item.icon;
+                      const active = isActive(item.path);
+                      
+                      return (
+                        <Link 
+                          key={item.path} 
+                          to={item.path}
+                          onClick={() => setMobileSidebarOpen(false)}
+                        >
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            className={`
+                              flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+                              ${active 
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
+                                : 'text-slate-600 hover:bg-slate-100'
+                              }
+                            `}
+                          >
+                            <Icon size={20} className="flex-shrink-0" />
+                            <span className="font-medium text-sm">{item.label}</span>
+                          </motion.div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </nav>
+
+                {/* Mobile User Info */}
+                <div className="border-t border-slate-100 p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                      {userData.initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-700">{userData.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{userData.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-medium text-sm"
+                  >
+                    <LogOut size={16} />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
