@@ -17,19 +17,29 @@ const Login = ({ setIsAuthenticated }) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      // Demo credentials check
-      if (formData.email === "demo@example.com" && formData.password === "password") {
-        localStorage.setItem("authToken", "demo-token-123");
-        setIsAuthenticated(true);
-        toast.success("Welcome back!");
-        navigate("/dashboard");
-      } else {
-        toast.error("Invalid credentials. Try demo@example.com / password");
+    try {
+      // Use the newly created api.js
+      const { apiPost } = await import('../api.js');
+      const response = await apiPost('/auth/login', formData);
+      
+      // Handle potential casing differences (token vs Token)
+      const token = response.token || response.Token;
+      const user = response.user || response.User;
+
+      if (!token) {
+        throw new Error("Authentication failed: No token received from server.");
       }
+      
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      setIsAuthenticated(true);
+      toast.success(response.message || "Welcome back!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.message || "Invalid credentials. Try again.");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

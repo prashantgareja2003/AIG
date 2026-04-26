@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { DollarSign, Clock, FileText, AlertCircle, Plus, Sparkles, UserPlus, Layout } from "lucide-react";
 import RevenueChart from "../components/dashboard/RevenueChart";
 
@@ -50,10 +51,10 @@ export default function Dashboard() {
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <QuickAction icon={Plus} label="New Invoice" subtitle="Create from scratch" color="indigo" />
-          <QuickAction icon={Sparkles} label="AI Generate" subtitle="Describe & generate" color="purple" />
-          <QuickAction icon={UserPlus} label="Add Client" subtitle="New client profile" color="emerald" />
-          <QuickAction icon={Layout} label="Templates" subtitle="Browse templates" color="cyan" />
+          <QuickAction icon={Plus} label="New Invoice" subtitle="Create from scratch" color="indigo" to="/dashboard/create" />
+          <QuickAction icon={Sparkles} label="AI Generate" subtitle="Describe & generate" color="purple" to="/dashboard/magic-create" />
+          <QuickAction icon={UserPlus} label="Add Client" subtitle="New client profile" color="emerald" to="/dashboard/clients" />
+          <QuickAction icon={Layout} label="Templates" subtitle="Browse templates" color="cyan" to="/dashboard/templates" />
         </div>
       </div>
 
@@ -103,7 +104,8 @@ function StatsCard({ icon: Icon, label, value, subtitle, color }) {
   );
 }
 
-function QuickAction({ icon: Icon, label, subtitle, color }) {
+function QuickAction({ icon: Icon, label, subtitle, color, to }) {
+  const navigate = useNavigate();
   const colors = {
     indigo: { bg: "bg-indigo-50", text: "text-indigo-600", hoverBg: "group-hover:bg-indigo-100" },
     purple: { bg: "bg-purple-50", text: "text-purple-600", hoverBg: "group-hover:bg-purple-100" },
@@ -114,7 +116,10 @@ function QuickAction({ icon: Icon, label, subtitle, color }) {
   const colorSet = colors[color];
 
   return (
-    <button className="group bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-200 hover:shadow-md transition-all text-left">
+    <button 
+      onClick={() => to && navigate(to)}
+      className="group bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-200 hover:shadow-md transition-all text-left"
+    >
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-all ${colorSet.bg} ${colorSet.text} ${colorSet.hoverBg}`}>
           <Icon className="w-5 h-5" />

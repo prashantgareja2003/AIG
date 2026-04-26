@@ -25,14 +25,18 @@ const Signup = ({ setIsAuthenticated }) => {
 
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      localStorage.setItem("authToken", "demo-token-123");
-      setIsAuthenticated(true);
-      toast.success("Account created successfully!");
-      navigate("/dashboard");
+    try {
+      const { apiPost } = await import('../api.js');
+      const { confirmPassword, ...dataToSend } = formData;
+      const response = await apiPost('/auth/signup', dataToSend);
+      
+      toast.success(response.message || "Account created successfully!");
+      navigate("/login");
+    } catch (error) {
+      toast.error(error.message || "Failed to create account. Try again.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (

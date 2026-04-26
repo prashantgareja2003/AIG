@@ -7,6 +7,7 @@ const Logout = ({ setIsAuthenticated }) => {
 
   useEffect(() => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
     setIsAuthenticated(false);
     toast.success("Logged out successfully");
     navigate("/", { replace: true });

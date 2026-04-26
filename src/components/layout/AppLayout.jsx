@@ -2,19 +2,21 @@ import React, { useState, useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  LayoutDashboard, 
-  FileText, 
-  Users, 
-  Settings, 
-  PlusCircle,
+  PieChart,
+  Wand2,
+  FilePlus,
+  LayoutTemplate,
+  History,
+  Users,
+  Sliders,
   ChevronLeft,
   ChevronRight,
   ChevronDown, 
   UserCog, 
   LogOut, 
-  User,
   Menu,
-  X
+  X,
+  FileText
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -26,19 +28,32 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const userData = {
-    name: "John Doe",
-    email: "john@example.com",
-    initials: "JD",
-  };
+  const [userData, setUserData] = useState({
+    name: "User",
+    email: "user@example.com",
+    initials: "U",
+  });
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setUserData({
+        name: user.name,
+        email: user.email,
+        initials: user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : "U"
+      });
+    }
+  }, []);
 
   const menuItems = [
-    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { path: "/dashboard/create", icon: PlusCircle, label: "Create Invoice" },
-    { path: "/dashboard/invoices", icon: FileText, label: "Invoices" },
-    { path: "/dashboard/clients", icon: Users, label: "Clients" },
-    { path: "/dashboard/profile", icon: User, label: "Profile" },
-    { path: "/dashboard/settings", icon: Settings, label: "Settings" },
+    { path: "/dashboard", icon: PieChart, label: "Overview" },
+    { path: "/dashboard/magic-create", icon: Wand2, label: "AI Generate" },
+    { path: "/dashboard/create", icon: FilePlus, label: "New Invoice" },
+    { path: "/dashboard/templates", icon: LayoutTemplate, label: "Templates" },
+    { path: "/dashboard/invoices", icon: History, label: "Invoice History" },
+    { path: "/dashboard/clients", icon: Users, label: "Client Directory" },
+    { path: "/dashboard/settings", icon: Sliders, label: "Preferences" },
   ];
 
   useEffect(() => {
@@ -247,9 +262,6 @@ export default function AppLayout() {
                         <p className="text-sm font-semibold text-slate-800">{userData.name}</p>
                         <p className="text-xs text-slate-500">{userData.email}</p>
                       </div>
-                      <Link to="/dashboard/profile" onClick={() => setUserMenuOpen(false)} className="block">
-                        <DropdownItem icon={User} label="My Profile" />
-                      </Link>
                       <Link to="/dashboard/settings" onClick={() => setUserMenuOpen(false)} className="block">
                         <DropdownItem icon={UserCog} label="Account Settings" />
                       </Link>

@@ -1,36 +1,15 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Search, 
-  Download, 
-  MoreVertical, 
-  Plus, 
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Mail,
-  Printer,
-  Trash2,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  FileText,
-  TrendingUp,
-  DollarSign
+  Search, Download, Plus,
+  ChevronLeft, ChevronRight,
+  Eye, Trash2, X,
+  CheckCircle, Clock, AlertCircle, FileText, DollarSign
 } from "lucide-react";
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
-const allInvoices = [
-  { id: "INV-001", client: "Acme Corp", email: "billing@acme.com", amount: 3250.00, status: "paid", date: "Mar 28, 2026", due: "Apr 28, 2026", items: 3 },
-  { id: "INV-002", client: "TechStart Inc", email: "finance@techstart.com", amount: 1800.00, status: "pending", date: "Mar 25, 2026", due: "Apr 10, 2026", items: 2 },
-  { id: "INV-003", client: "Design Studio", email: "accounts@designstudio.com", amount: 4500.00, status: "paid", date: "Mar 22, 2026", due: "Apr 22, 2026", items: 5 },
-  { id: "INV-004", client: "Cloud Nine", email: "payments@cloudnine.com", amount: 2100.00, status: "overdue", date: "Mar 18, 2026", due: "Mar 30, 2026", items: 2 },
-  { id: "INV-005", client: "GreenLeaf Co", email: "billing@greenleaf.com", amount: 6750.00, status: "paid", date: "Mar 15, 2026", due: "Apr 15, 2026", items: 4 },
-  { id: "INV-006", client: "Urban Flow", email: "finance@urbanflow.com", amount: 1200.00, status: "pending", date: "Mar 10, 2026", due: "Mar 25, 2026", items: 1 },
-  { id: "INV-007", client: "Nexus Solutions", email: "billing@nexus.com", amount: 8900.00, status: "paid", date: "Mar 5, 2026", due: "Apr 5, 2026", items: 6 },
-  { id: "INV-008", client: "Bright Innovations", email: "accounts@bright.com", amount: 3400.00, status: "draft", date: "Mar 1, 2026", due: "Apr 1, 2026", items: 3 },
-];
+
 
 const statusStyles = {
   paid: { bg: "bg-emerald-50", text: "text-emerald-700", icon: CheckCircle, label: "Paid" },
@@ -48,34 +27,51 @@ const filterTabs = [
 ];
 
 export default function Invoices() {
+  const [allInvoices, setAllInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [viewInvoice, setViewInvoice] = useState(null);
   const [showActionsMenu, setShowActionsMenu] = useState(null);
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
+
+  const fetchInvoices = async () => {
+    try {
+      const { apiGet } = await import('../api.js');
+      const data = await apiGet('/invoices');
+      setAllInvoices(data);
+    } catch (error) {
+      toast.error("Failed to load invoices");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
 
   // Calculate stats
   const stats = useMemo(() => {
     const total = allInvoices.length;
-    const paid = allInvoices.filter(i => i.status === "paid").length;
-    const pending = allInvoices.filter(i => i.status === "pending").length;
-    const overdue = allInvoices.filter(i => i.status === "overdue").length;
-    const totalRevenue = allInvoices.reduce((sum, i) => sum + i.amount, 0);
-    const paidRevenue = allInvoices.filter(i => i.status === "paid").reduce((sum, i) => sum + i.amount, 0);
+    const paid = allInvoices.filter(i => i.status.toLowerCase() === "paid").length;
+    const pending = allInvoices.filter(i => i.status.toLowerCase() === "pending").length;
+    const overdue = allInvoices.filter(i => i.status.toLowerCase() === "overdue").length;
+    const totalRevenue = allInvoices.reduce((sum, i) => sum + i.totalAmount, 0);
+    const paidRevenue = allInvoices.filter(i => i.status.toLowerCase() === "paid").reduce((sum, i) => sum + i.totalAmount, 0);
     
     return { total, paid, pending, overdue, totalRevenue, paidRevenue };
-  }, []);
+  }, [allInvoices]);
 
   // Filter and sort invoices
   const filteredInvoices = useMemo(() => {
     let filtered = allInvoices.filter(inv => {
-      const matchesSearch = inv.client.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           inv.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           inv.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = activeFilter === "All" || inv.status === activeFilter;
+      const matchesSearch = inv.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           inv.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = activeFilter === "All" || inv.status.toLowerCase() === activeFilter.toLowerCase();
       return matchesSearch && matchesFilter;
     });
 
@@ -84,16 +80,16 @@ export default function Invoices() {
       let aVal, bVal;
       switch(sortBy) {
         case "amount":
-          aVal = a.amount;
-          bVal = b.amount;
+          aVal = a.totalAmount;
+          bVal = b.totalAmount;
           break;
         case "client":
-          aVal = a.client;
-          bVal = b.client;
+          aVal = a.clientName;
+          bVal = b.clientName;
           break;
         default:
-          aVal = new Date(a.date);
-          bVal = new Date(b.date);
+          aVal = new Date(a.issueDate);
+          bVal = new Date(b.issueDate);
       }
       if (sortOrder === "asc") {
         return aVal > bVal ? 1 : -1;
@@ -103,7 +99,7 @@ export default function Invoices() {
     });
 
     return filtered;
-  }, [searchTerm, activeFilter, sortBy, sortOrder]);
+  }, [allInvoices, searchTerm, activeFilter, sortBy, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
@@ -112,19 +108,54 @@ export default function Invoices() {
     currentPage * itemsPerPage
   );
 
-  const handleAction = (action, invoice) => {
+  const handleAction = async (action, invoice) => {
     switch(action) {
       case "view":
-        toast.success(`Viewing invoice ${invoice.id}`);
+        setViewInvoice(invoice);
         break;
       case "email":
-        toast.success(`Email sent to ${invoice.email}`);
+        Swal.fire({
+          title: 'Send Email?',
+          text: `Are you sure you want to send invoice ${invoice.invoiceNumber} to ${invoice.clientEmail}?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#4f46e5',
+          cancelButtonColor: '#9ca3af',
+          confirmButtonText: 'Yes, send it!'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Swal.fire(
+              'Sent!',
+              `Invoice ${invoice.invoiceNumber} has been sent to ${invoice.clientEmail}.`,
+              'success'
+            );
+          }
+        });
         break;
       case "print":
-        toast.success(`Printing invoice ${invoice.id}`);
+        toast.success(`Printing invoice ${invoice.invoiceNumber}`);
         break;
       case "delete":
-        toast.error(`Invoice ${invoice.id} deleted`);
+        Swal.fire({
+          title: 'Are you sure?',
+          text: `Do you really want to delete invoice ${invoice.invoiceNumber}? This action cannot be undone.`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#9ca3af',
+          confirmButtonText: 'Yes, delete it!'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const { apiDelete } = await import('../api.js');
+              await apiDelete(`/invoices/${invoice.id}`);
+              setAllInvoices(prev => prev.filter(inv => inv.id !== invoice.id));
+              Swal.fire('Deleted!', 'Invoice has been deleted.', 'success');
+            } catch (error) {
+              toast.error("Failed to delete invoice");
+            }
+          }
+        });
         break;
     }
     setShowActionsMenu(null);
@@ -143,7 +174,17 @@ export default function Invoices() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-500 font-medium">Loading invoices...</p>
+      </div>
+    );
+  }
+
   return (
+    <>
     <div className="w-full space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -155,7 +196,7 @@ export default function Invoices() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-indigo-100 text-sm">Total Revenue</p>
-              <p className="text-2xl font-bold mt-1">${stats.totalRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold mt-1">₹{stats.totalRevenue.toLocaleString()}</p>
               <p className="text-indigo-200 text-xs mt-1">From {stats.total} invoices</p>
             </div>
             <DollarSign size={32} className="text-indigo-200" />
@@ -171,7 +212,7 @@ export default function Invoices() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Paid Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">${stats.paidRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">₹{stats.paidRevenue.toLocaleString()}</p>
               <p className="text-emerald-600 text-xs mt-1">From {stats.paid} invoices</p>
             </div>
             <CheckCircle size={32} className="text-emerald-500" />
@@ -188,7 +229,7 @@ export default function Invoices() {
             <div>
               <p className="text-gray-500 text-sm">Pending Amount</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                ${allInvoices.filter(i => i.status === "pending").reduce((sum, i) => sum + i.amount, 0).toLocaleString()}
+                ₹{allInvoices.filter(i => i.status.toLowerCase() === "pending").reduce((sum, i) => sum + i.totalAmount, 0).toLocaleString()}
               </p>
               <p className="text-amber-600 text-xs mt-1">{stats.pending} pending invoices</p>
             </div>
@@ -222,6 +263,7 @@ export default function Invoices() {
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={() => (window.location.href = "/dashboard/create")}
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-indigo-200"
         >
           <Plus size={18} /> Create New Invoice
@@ -304,9 +346,9 @@ export default function Invoices() {
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort("id")}>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort("invoiceNumber")}>
                   Invoice
-                  {sortBy === "id" && (sortOrder === "asc" ? " ↑" : " ↓")}
+                  {sortBy === "invoiceNumber" && (sortOrder === "asc" ? " ↑" : " ↓")}
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort("client")}>
                   Client
@@ -327,7 +369,10 @@ export default function Invoices() {
             <tbody className="divide-y divide-gray-100">
               <AnimatePresence mode="wait">
                 {paginatedInvoices.map((inv, idx) => {
-                  const StatusIcon = statusStyles[inv.status].icon;
+                  const status = inv.status.toLowerCase() || 'draft';
+                  const StatusIcon = statusStyles[status]?.icon || FileText;
+                  const style = statusStyles[status] || statusStyles.draft;
+                  
                   return (
                     <motion.tr 
                       key={inv.id}
@@ -338,27 +383,26 @@ export default function Invoices() {
                       className="hover:bg-gray-50/80 transition-colors group"
                     >
                       <td className="px-6 py-4">
-                        <span className="text-sm font-mono font-semibold text-gray-700">{inv.id}</span>
+                        <span className="text-sm font-mono font-semibold text-gray-700">{inv.invoiceNumber}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{inv.client}</p>
-                          <p className="text-xs text-gray-500">{inv.email}</p>
+                          <p className="text-sm font-medium text-gray-900">{inv.clientName}</p>
+                          <p className="text-xs text-gray-500">{inv.clientEmail}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-gray-900">${inv.amount.toLocaleString()}</span>
-                        <p className="text-xs text-gray-500">{inv.items} items</p>
+                        <span className="text-sm font-bold text-gray-900">₹{inv.totalAmount.toLocaleString()}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold ${statusStyles[inv.status].bg} ${statusStyles[inv.status].text}`}>
+                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold ${style.bg} ${style.text}`}>
                           <StatusIcon size={12} />
-                          {statusStyles[inv.status].label}
+                          {style.label}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm text-gray-700">{inv.date}</p>
-                        <p className="text-xs text-gray-400">Due: {inv.due}</p>
+                        <p className="text-sm text-gray-700">{new Date(inv.issueDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-400">Due: {new Date(inv.dueDate).toLocaleDateString()}</p>
                       </td>
                       <td className="px-6 py-4 text-right relative">
                         <div className="flex items-center justify-end gap-2">
@@ -370,24 +414,6 @@ export default function Invoices() {
                             title="View Invoice"
                           >
                             <Eye size={16} />
-                          </motion.button>
-                          <motion.button 
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleAction("email", inv)}
-                            className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
-                            title="Email Invoice"
-                          >
-                            <Mail size={16} />
-                          </motion.button>
-                          <motion.button 
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleAction("print", inv)}
-                            className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
-                            title="Print Invoice"
-                          >
-                            <Printer size={16} />
                           </motion.button>
                           <motion.button 
                             whileHover={{ scale: 1.1 }}
@@ -463,5 +489,99 @@ export default function Invoices() {
         )}
       </div>
     </div>
+
+    {/* View Invoice Modal */}
+    <AnimatePresence>
+      {viewInvoice && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setViewInvoice(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{viewInvoice.invoiceNumber}</h3>
+                <p className="text-sm text-gray-500">{viewInvoice.clientName}</p>
+              </div>
+              <button onClick={() => setViewInvoice(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <X size={18} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 font-medium uppercase">Status</p>
+                  <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full mt-1 ${
+                    statusStyles[viewInvoice.status?.toLowerCase()]?.bg || 'bg-slate-100'
+                  } ${
+                    statusStyles[viewInvoice.status?.toLowerCase()]?.text || 'text-slate-600'
+                  }`}>{viewInvoice.status}</span>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 font-medium uppercase">Total Amount</p>
+                  <p className="text-xl font-bold text-indigo-600 mt-1">₹{viewInvoice.totalAmount?.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Issue Date</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(viewInvoice.issueDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Due Date</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(viewInvoice.dueDate).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Subtotal</p>
+                  <p className="text-sm font-semibold text-gray-800">₹{viewInvoice.subtotal?.toLocaleString() || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Tax ({viewInvoice.taxRate}%)</p>
+                  <p className="text-sm font-semibold text-gray-800">₹{viewInvoice.taxAmount?.toLocaleString() || '—'}</p>
+                </div>
+              </div>
+              {viewInvoice.notes && (
+                <div className="bg-amber-50 rounded-xl p-3">
+                  <p className="text-xs text-amber-600 font-medium uppercase">Notes</p>
+                  <p className="text-sm text-amber-800 mt-1">{viewInvoice.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
+              <button
+                onClick={() => setViewInvoice(null)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-white transition-all"
+              >Close</button>
+              <button
+                onClick={() => {
+                  handleAction('delete', viewInvoice);
+                  setViewInvoice(null);
+                }}
+                className="px-4 py-2 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-all flex items-center gap-2"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

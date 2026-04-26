@@ -7,11 +7,12 @@ import CreateInvoice from "./pages/CreateInvoice";
 import Invoices from "./pages/Invoices";
 import Clients from "./pages/Clients";
 import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
 import Logout from "./pages/Logout";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import MagicCreate from "./pages/MagicCreate";
+import Templates from "./pages/Templates";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, isAuthenticated }) => {
@@ -84,10 +85,11 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="create" element={<CreateInvoice />} />
+          <Route path="magic-create" element={<MagicCreate />} />
+          <Route path="templates" element={<Templates />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="clients" element={<Clients />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="profile" element={<Profile />} />
           <Route path="logout" element={<Logout setIsAuthenticated={setIsAuthenticated} />} />
         </Route>
 
