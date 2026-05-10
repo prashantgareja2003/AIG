@@ -142,7 +142,7 @@ const MagicCreate = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden"
+        className="glass rounded-3xl overflow-hidden"
       >
         <div className="p-8">
           <div className="relative">

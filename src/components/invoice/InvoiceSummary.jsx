@@ -41,7 +41,7 @@ export default function InvoiceSummary({ items, taxRate, discount, onTaxChange, 
           <div className="flex items-center justify-between py-1">
             <span className="text-sm md:text-base text-slate-600">Subtotal</span>
             <span className="text-sm md:text-base font-mono font-bold text-slate-700">
-              ${subtotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              ₹{subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
 
@@ -62,7 +62,7 @@ export default function InvoiceSummary({ items, taxRate, discount, onTaxChange, 
               </div>
             </div>
             <span className="text-sm md:text-base font-mono text-rose-500">
-              -${discountAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              -₹{discountAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
 
@@ -83,7 +83,7 @@ export default function InvoiceSummary({ items, taxRate, discount, onTaxChange, 
               </div>
             </div>
             <span className="text-sm md:text-base font-mono text-emerald-600">
-              +${taxAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              +₹{taxAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
 
@@ -97,7 +97,7 @@ export default function InvoiceSummary({ items, taxRate, discount, onTaxChange, 
           >
             <span className="text-base md:text-lg font-bold text-slate-900">Total Due</span>
             <span className="text-xl md:text-2xl lg:text-3xl font-bold font-mono text-indigo-600">
-              ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              ₹{total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </motion.div>
         </div>
@@ -117,7 +117,7 @@ export default function InvoiceSummary({ items, taxRate, discount, onTaxChange, 
                   <span className="text-xs text-slate-500">Taxable Amount</span>
                 </div>
                 <span className="text-xs font-mono text-slate-600">
-                  ${taxableAmount.toFixed(2)}
+                  ₹{taxableAmount.toFixed(2)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -126,7 +126,7 @@ export default function InvoiceSummary({ items, taxRate, discount, onTaxChange, 
                   <span className="text-xs text-slate-500">Avg. Item Value</span>
                 </div>
                 <span className="text-xs font-mono text-slate-600">
-                  ${averageItemValue.toFixed(2)}
+                  ₹{averageItemValue.toFixed(2)}
                 </span>
               </div>
               <div className="flex items-center justify-between">

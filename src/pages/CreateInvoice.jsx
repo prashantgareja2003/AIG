@@ -8,13 +8,80 @@ import {
   Plus, User, Building, Mail, CreditCard, Phone, MapPin
 } from "lucide-react";
 import toast from 'react-hot-toast';
-import { DefaultTemplate, ModernTemplate, MinimalTemplate } from "../components/invoice/InvoicePreviewTemplates";
+// import { DefaultTemplate, ModernTemplate, MinimalTemplate } from "../components/invoice/InvoicePreviewTemplates";
+
+const DynamicTemplate = ({ html, data, items }) => {
+  if (!html) return <div className="p-10 text-center text-slate-400">Loading template...</div>;
+
+  let renderedHtml = html;
+  
+  // Replace simple fields
+  const fields = {
+    invoiceNumber: data.invoiceNumber,
+    issueDate: data.issueDate instanceof Date ? data.issueDate.toLocaleDateString('en-IN') : data.issueDate,
+    dueDate: data.dueDate instanceof Date ? data.dueDate.toLocaleDateString('en-IN') : data.dueDate,
+    fromName: data.fromName,
+    fromAddress: data.fromAddress,
+    fromEmail: data.fromEmail,
+    fromTagline: data.fromTagline || "BHADIYAD - MORBI - GUJARAT",
+    fromGSTIN: data.fromGSTIN,
+    clientName: data.clientName,
+    clientEmail: data.clientEmail,
+    clientAddress: data.clientAddress,
+    clientGSTIN: data.clientGSTIN || "N/A",
+    vehicleNumber: data.vehicleNumber || "N/A",
+    timeOfRemoval: data.timeOfRemoval || "N/A",
+    modeOfDelivery: data.modeOfDelivery || "N/A",
+    stateCode: data.stateCode || "N/A",
+    hsnCode: data.hsnCode || "N/A",
+    subtotal: data.subtotal,
+    taxRate: data.taxRate,
+    taxAmount: data.taxAmount,
+    sgstRate: (data.taxRate / 2),
+    sgstAmount: (parseFloat(data.taxAmount.replace(/,/g, '')) / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    cgstRate: (data.taxRate / 2),
+    cgstAmount: (parseFloat(data.taxAmount.replace(/,/g, '')) / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    discountAmount: data.discountAmount,
+    total: data.total,
+    amountInWords: data.amountInWords,
+    notes: data.notes || ""
+  };
+
+  Object.keys(fields).forEach(key => {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    renderedHtml = renderedHtml.replace(regex, fields[key]);
+  });
+
+  // Handle items loop (very simple implementation)
+  const itemRegex = /{{#items}}([\s\S]*?){{\/items}}/g;
+  renderedHtml = renderedHtml.replace(itemRegex, (match, content) => {
+    return items.map((item, idx) => {
+      let itemHtml = content;
+      itemHtml = itemHtml.replace(/{{index}}/g, idx + 1);
+      itemHtml = itemHtml.replace(/{{description}}/g, item.description);
+      itemHtml = itemHtml.replace(/{{quantity}}/g, item.quantity.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+      itemHtml = itemHtml.replace(/{{rate}}/g, item.rate.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+      itemHtml = itemHtml.replace(/{{hsnCode}}/g, item.hsnCode || data.hsnCode || "N/A");
+      itemHtml = itemHtml.replace(/{{total}}/g, (item.quantity * item.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+      return itemHtml;
+    }).join('');
+  });
+
+  return (
+    <div 
+      id="invoice-preview-container"
+      className="bg-white rounded-xl shadow-lg overflow-hidden"
+      dangerouslySetInnerHTML={{ __html: renderedHtml }} 
+    />
+  );
+};
 
 const CreateInvoicePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("edit");
-  const [selectedTemplate, setSelectedTemplate] = useState(location.state?.selectedTemplate || "default");
+  const [selectedTemplateId, setSelectedTemplateId] = useState(location.state?.selectedTemplate || localStorage.getItem("selectedTemplateId") || 1);
+  const [templateHtml, setTemplateHtml] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [clients, setClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(true);
@@ -22,6 +89,7 @@ const CreateInvoicePage = () => {
   const [formData, setFormData] = useState({
     clientId: 0,
     fromName: "ShivShakti Enterprise",
+    fromTagline: "BHADIYAD - MORBI - GUJARAT",
     senderName: "", // User's name
     fromAddress: "SR No. 15/P1 or 15 P2/P2, Bhadiyad Part,\nBhadiyad, Morbi, Gujarat – 363642",
     fromEmail: "billing@techsolutions.com",
@@ -43,6 +111,7 @@ const CreateInvoicePage = () => {
     stateCode: "24 – Gujarat",
     fromGSTIN: "24AEWFS7552M1Z2",
     clientGSTIN: "",
+    hsnCode: "2507",
     terms: [
       "Complaints regarding this invoice must be sent within 48 hours of receipt.",
       "Payment to be made by A/c Payee Draft or Cheque only.",
@@ -82,6 +151,17 @@ const CreateInvoicePage = () => {
       }
     };
     fetchClients();
+
+    const fetchTemplate = async () => {
+      try {
+        const { apiGet } = await import('../api.js');
+        const data = await apiGet(`/templates/${selectedTemplateId}`);
+        setTemplateHtml(data.htmlContent);
+      } catch (error) {
+        console.error("Failed to load template", error);
+      }
+    };
+    fetchTemplate();
 
     if (location.state?.parsedData) {
       const { clientName, amount, taxRate } = location.state.parsedData;
@@ -194,7 +274,7 @@ const CreateInvoicePage = () => {
     return words + " Only";
   };
 
-  const handleSave = async () => {
+  const handleSave = async (status = "Pending") => {
     if (!formData.clientId) {
       toast.error("Please select a client");
       return;
@@ -218,7 +298,8 @@ const CreateInvoicePage = () => {
         taxAmount: calculateTax(),
         discount: calculateDiscount(),
         totalAmount: calculateTotal(),
-        status: "Pending",
+        status: status,
+        templateId: parseInt(selectedTemplateId),
         notes: formData.notes,
         items: items.map(item => ({
           description: item.description,
@@ -229,7 +310,7 @@ const CreateInvoicePage = () => {
       };
 
       await apiPost('/invoices', payload);
-      toast.success("Invoice created successfully!");
+      toast.success(status === "Draft" ? "Draft saved successfully!" : "Invoice created successfully!");
       navigate("/dashboard/invoices");
     } catch (error) {
       toast.error(error.message || "Failed to save invoice");
@@ -239,6 +320,22 @@ const CreateInvoicePage = () => {
   };
 
   const handleDownload = () => {
+    const element = document.getElementById('invoice-preview-container');
+    if (!element) {
+      toast.error("Preview not found");
+      return;
+    }
+
+    const opt = {
+      margin:       0.5,
+      filename:     `${formData.invoiceNumber}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    // New Promise-based usage:
+    window.html2pdf().set(opt).from(element).save();
     toast.success("Downloading PDF...");
   };
 
@@ -287,6 +384,14 @@ const CreateInvoicePage = () => {
             )}
             Save Invoice
           </button>
+
+          <button
+            onClick={() => handleSave("Draft")}
+            disabled={isSaving}
+            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-all flex items-center gap-2"
+          >
+            <FileText size={16} /> Save as Draft
+          </button>
         </div>
       </div>
 
@@ -302,9 +407,61 @@ const CreateInvoicePage = () => {
           >
             {/* LEFT COLUMN */}
             <div className="space-y-6">
+              {/* Company Details (Variable inputs) */}
+              <div className="glass rounded-2xl overflow-hidden border border-gray-200">
+                <div className="px-5 py-4 bg-indigo-500/5 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Building size={18} className="text-indigo-600" />
+                    <h3 className="font-semibold text-gray-800">Your Company (Variable Inputs)</h3>
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Company Name *</label>
+                      <input 
+                        type="text"
+                        value={formData.fromName}
+                        onChange={(e) => handleDataChange("fromName", e.target.value)}
+                        placeholder="e.g. ShivShakti Enterprise"
+                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Tagline / Location (Variable)</label>
+                      <input 
+                        type="text"
+                        value={formData.fromTagline}
+                        onChange={(e) => handleDataChange("fromTagline", e.target.value)}
+                        placeholder="BHADIYAD - MORBI - GUJARAT"
+                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Your GSTIN</label>
+                      <input 
+                        type="text"
+                        value={formData.fromGSTIN}
+                        onChange={(e) => handleDataChange("fromGSTIN", e.target.value)}
+                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">State Code</label>
+                      <input 
+                        type="text"
+                        value={formData.stateCode}
+                        onChange={(e) => handleDataChange("stateCode", e.target.value)}
+                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Bill To Section */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 bg-gradient-to-r from-teal-50 to-white border-b border-gray-100">
+              <div className="glass rounded-2xl overflow-hidden border border-gray-200">
+                <div className="px-5 py-4 bg-teal-500/5 border-b border-gray-100">
                   <div className="flex items-center gap-2">
                     <User size={18} className="text-teal-600" />
                     <h3 className="font-semibold text-gray-800">Bill To (Client)</h3>
@@ -349,8 +506,8 @@ const CreateInvoicePage = () => {
               </div>
 
               {/* Invoice Details */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 bg-gradient-to-r from-purple-50 to-white border-b border-gray-100">
+              <div className="glass rounded-2xl overflow-hidden border border-gray-200">
+                <div className="px-5 py-4 bg-purple-500/5 border-b border-gray-100">
                   <div className="flex items-center gap-2">
                     <CreditCard size={18} className="text-purple-600" />
                     <h3 className="font-semibold text-gray-800">Invoice Details</h3>
@@ -396,6 +553,27 @@ const CreateInvoicePage = () => {
                       />
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Time of Removal</label>
+                      <input 
+                        type="text"
+                        value={formData.timeOfRemoval}
+                        onChange={(e) => handleDataChange("timeOfRemoval", e.target.value)}
+                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Mode of Delivery</label>
+                      <input 
+                        type="text"
+                        value={formData.modeOfDelivery}
+                        onChange={(e) => handleDataChange("modeOfDelivery", e.target.value)}
+                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -403,8 +581,8 @@ const CreateInvoicePage = () => {
             {/* RIGHT COLUMN */}
             <div className="space-y-6">
               {/* Line Items */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 bg-gradient-to-r from-orange-50 to-white border-b border-gray-100 flex items-center justify-between">
+              <div className="glass rounded-2xl overflow-hidden border border-gray-200">
+                <div className="px-5 py-4 bg-orange-500/5 border-b border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FileText size={18} className="text-orange-600" />
                     <h3 className="font-semibold text-gray-800">Line Items</h3>
@@ -514,13 +692,18 @@ const CreateInvoicePage = () => {
             exit={{ opacity: 0, scale: 0.95 }}
             className="max-w-4xl mx-auto"
           >
-            {selectedTemplate === 'modern' ? (
-              <ModernTemplate {...{ formData, items, formatNumber, numberToWords, calculateSubtotal, calculateCGST, calculateSGST, calculateTax, calculateDiscount, calculateTotal }} />
-            ) : selectedTemplate === 'minimal' ? (
-              <MinimalTemplate {...{ formData, items, formatNumber, numberToWords, calculateSubtotal, calculateCGST, calculateSGST, calculateTax, calculateDiscount, calculateTotal }} />
-            ) : (
-              <DefaultTemplate {...{ formData, items, formatNumber, numberToWords, calculateSubtotal, calculateCGST, calculateSGST, calculateTax, calculateDiscount, calculateTotal }} />
-            )}
+            <DynamicTemplate 
+              html={templateHtml} 
+              data={{
+                ...formData,
+                subtotal: formatNumber(calculateSubtotal()),
+                taxAmount: formatNumber(calculateTax()),
+                discountAmount: formatNumber(calculateDiscount()),
+                total: formatNumber(calculateTotal()),
+                amountInWords: numberToWords(calculateTotal()),
+              }} 
+              items={items} 
+            />
 
               <div className="mt-6 flex justify-end gap-3 no-print">
                 <button onClick={handleDownload} className="px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all flex items-center gap-2">

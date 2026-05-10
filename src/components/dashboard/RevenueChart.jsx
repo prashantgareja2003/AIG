@@ -4,20 +4,7 @@ import { motion } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-const data = [
-  { month: "Jan", revenue: 4200, invoices: 12 },
-  { month: "Feb", revenue: 5800, invoices: 15 },
-  { month: "Mar", revenue: 4900, invoices: 14 },
-  { month: "Apr", revenue: 7200, invoices: 18 },
-  { month: "May", revenue: 6800, invoices: 17 },
-  { month: "Jun", revenue: 8900, invoices: 22 },
-  { month: "Jul", revenue: 7500, invoices: 20 },
-  { month: "Aug", revenue: 9200, invoices: 24 },
-  { month: "Sep", revenue: 8100, invoices: 21 },
-  { month: "Oct", revenue: 10500, invoices: 26 },
-  { month: "Nov", revenue: 9800, invoices: 25 },
-  { month: "Dec", revenue: 12400, invoices: 30 },
-];
+// Static fallback data removed
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -34,11 +21,13 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function RevenueChart() {
+export default function RevenueChart({ data = [] }) {
   const [chartType, setChartType] = useState('area');
-  const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
-  const avgRevenue = totalRevenue / data.length;
-  const growth = ((data[11].revenue - data[0].revenue) / data[0].revenue * 100).toFixed(1);
+  
+  const totalRevenue = data.reduce((sum, item) => sum + (item.revenue || 0), 0);
+  const growth = data.length >= 2 
+    ? (((data[data.length - 1].revenue - data[0].revenue) / (data[0].revenue || 1)) * 100).toFixed(1)
+    : "0.0";
 
   return (
     <motion.div

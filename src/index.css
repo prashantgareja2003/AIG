@@ -16,45 +16,85 @@
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-primary: hsl(var(--sidebar-primary));
   --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+
+  --font-sans: "Outfit", sans-serif;
+  --font-serif: "Playfair Display", serif;
 }
 
 @layer base {
   :root {
     /* Values must be space-separated for Tailwind v4 HSL mapping */
-    --background: 225 25% 97%;
-    --foreground: 230 25% 10%;
+    --background: 220 33% 98%;
+    --foreground: 220 40% 10%;
     --card: 0 0% 100%;
     --primary: 252 85% 60%;
-    --muted: 225 15% 94%;
-    --muted-foreground: 225 10% 50%;
-    --accent: 170 75% 45%;
-    --border: 225 15% 90%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 15% 45%;
+    --accent: 252 85% 60%;
+    --border: 220 20% 90%;
     
-    --sidebar-background: 230 25% 10%;
-    --sidebar-foreground: 225 15% 80%;
+    --sidebar-background: 220 33% 12%;
+    --sidebar-foreground: 220 15% 85%;
     --sidebar-primary: 252 85% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 20% 16%;
-    --sidebar-border: 230 20% 18%;
+    --sidebar-accent: 220 25% 18%;
+    --sidebar-border: 220 25% 20%;
+  }
+
+  .dark {
+    --background: 220 40% 5%;
+    --foreground: 210 20% 98%;
+    --card: 220 40% 7%;
+    --primary: 252 85% 65%;
+    --muted: 220 25% 12%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 252 85% 65%;
+    --border: 220 25% 15%;
   }
 
   * {
     /* This fixes the 'border-border' crash */
     border-color: hsl(var(--border));
+    transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease, backdrop-filter 0.3s ease;
   }
 
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 700;
   }
 }
 
 /* Custom Utilities for your interactive elements */
 @layer utilities {
   .glass {
-    background-color: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border));
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .glass-light {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 20px 0 rgba(31, 38, 135, 0.1);
+  }
+
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   }
 
   .gradient-primary {
@@ -65,6 +105,16 @@
     background: linear-gradient(135deg, hsl(252 85% 60%), hsl(280 80% 55%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    display: inline-block;
+  }
+
+  .hover-glow {
+    transition: all 0.3s ease;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    transform: translateY(-2px);
   }
 }
 @keyframes blob {
@@ -109,4 +159,13 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

@@ -9,6 +9,70 @@ import {
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
+const DynamicTemplate = ({ html, data, items }) => {
+  if (!html) return <div className="p-10 text-center text-slate-400 italic">Rendering invoice...</div>;
+
+  let renderedHtml = html;
+  
+  const fields = {
+    invoiceNumber: data.invoiceNumber,
+    issueDate: new Date(data.issueDate).toLocaleDateString('en-IN'),
+    dueDate: new Date(data.dueDate).toLocaleDateString('en-IN'),
+    fromName: data.fromName || "ShivShakti Enterprise",
+    fromAddress: data.fromAddress || "Morbi, Gujarat",
+    fromEmail: data.fromEmail || "billing@techsolutions.com",
+    fromTagline: data.fromTagline || "BHADIYAD - MORBI - GUJARAT",
+    fromGSTIN: data.fromGSTIN || "24AEWFS7552M1Z2",
+    clientName: data.clientName,
+    clientEmail: data.clientEmail,
+    clientAddress: data.clientAddress || "",
+    clientGSTIN: data.clientGSTIN || "N/A",
+    vehicleNumber: data.vehicleNumber || "N/A",
+    timeOfRemoval: data.timeOfRemoval || "N/A",
+    modeOfDelivery: data.modeOfDelivery || "N/A",
+    stateCode: data.stateCode || "N/A",
+    hsnCode: data.hsnCode || "N/A",
+    subtotal: (data.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    taxRate: data.taxRate || 0,
+    taxAmount: (data.taxAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    sgstRate: (data.taxRate || 0) / 2,
+    sgstAmount: ((data.taxAmount || 0) / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    cgstRate: (data.taxRate || 0) / 2,
+    cgstAmount: ((data.taxAmount || 0) / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    discountAmount: (data.discount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    total: (data.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    amountInWords: data.amountInWords || "Zero Rupees Only",
+    notes: data.notes || ""
+  };
+
+  Object.keys(fields).forEach(key => {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    renderedHtml = renderedHtml.replace(regex, fields[key]);
+  });
+
+  const itemRegex = /{{#items}}([\s\S]*?){{\/items}}/g;
+  renderedHtml = renderedHtml.replace(itemRegex, (match, content) => {
+    return (data.items || []).map((item, idx) => {
+      let itemHtml = content;
+      itemHtml = itemHtml.replace(/{{index}}/g, idx + 1);
+      itemHtml = itemHtml.replace(/{{description}}/g, item.description);
+      itemHtml = itemHtml.replace(/{{quantity}}/g, item.quantity.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+      itemHtml = itemHtml.replace(/{{rate}}/g, item.unitPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+      itemHtml = itemHtml.replace(/{{hsnCode}}/g, item.hsnCode || data.hsnCode || "N/A");
+      itemHtml = itemHtml.replace(/{{total}}/g, item.total.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+      return itemHtml;
+    }).join('');
+  });
+
+  return (
+    <div 
+      id="invoice-download-area"
+      className="bg-white"
+      dangerouslySetInnerHTML={{ __html: renderedHtml }} 
+    />
+  );
+};
+
 
 
 const statusStyles = {
@@ -33,6 +97,7 @@ export default function Invoices() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewInvoice, setViewInvoice] = useState(null);
+  const [templateHtml, setTemplateHtml] = useState(null);
   const [showActionsMenu, setShowActionsMenu] = useState(null);
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -112,6 +177,16 @@ export default function Invoices() {
     switch(action) {
       case "view":
         setViewInvoice(invoice);
+        setTemplateHtml(null);
+        if (invoice.templateId) {
+            try {
+                const { apiGet } = await import('../api.js');
+                const data = await apiGet(`/templates/${invoice.templateId}`);
+                setTemplateHtml(data.htmlContent);
+            } catch (err) {
+                console.error("Failed to load template", err);
+            }
+        }
         break;
       case "email":
         Swal.fire({
@@ -157,12 +232,82 @@ export default function Invoices() {
           }
         });
         break;
+      case "markPaid":
+        try {
+          const { apiPut } = await import('../api.js');
+          await apiPut(`/invoices/${invoice.id}/status`, { status: "Paid" });
+          setAllInvoices(prev => prev.map(inv => 
+            inv.id === invoice.id ? { ...inv, status: "Paid" } : inv
+          ));
+          if (viewInvoice && viewInvoice.id === invoice.id) {
+            setViewInvoice({ ...viewInvoice, status: "Paid" });
+          }
+          toast.success("Invoice marked as Paid!");
+        } catch (error) {
+          toast.error("Failed to update status");
+        }
+        break;
     }
     setShowActionsMenu(null);
   };
 
   const handleExport = () => {
-    toast.success("Exporting invoices to CSV...");
+    if (allInvoices.length === 0) {
+      toast.error("No invoices to export");
+      return;
+    }
+
+    // Define CSV headers
+    const headers = ["Invoice Number", "Client Name", "Issue Date", "Due Date", "Total Amount", "Status"];
+    
+    // Map invoice data to rows
+    const rows = filteredInvoices.map(inv => [
+      inv.invoiceNumber,
+      inv.clientName,
+      new Date(inv.issueDate).toLocaleDateString(),
+      new Date(inv.dueDate).toLocaleDateString(),
+      inv.totalAmount,
+      inv.status
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    // Create blob and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `invoices_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Invoices exported successfully!");
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    const element = document.getElementById('invoice-download-area');
+    if (!element) {
+      toast.error("Invoice content not ready");
+      return;
+    }
+
+    const opt = {
+      margin:       0.5,
+      filename:     `${viewInvoice.invoiceNumber}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    window.html2pdf().set(opt).from(element).save();
+    toast.success("Downloading PDF...");
   };
 
   const handleSort = (column) => {
@@ -341,7 +486,7 @@ export default function Invoices() {
       </div>
 
       {/* Table Container */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="glass rounded-2xl overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -415,6 +560,17 @@ export default function Invoices() {
                           >
                             <Eye size={16} />
                           </motion.button>
+                          {status !== 'paid' && (
+                            <motion.button 
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handleAction("markPaid", inv)}
+                              className="p-1.5 text-gray-400 hover:text-emerald-600 transition-colors"
+                              title="Mark as Paid"
+                            >
+                              <CheckCircle size={16} />
+                            </motion.button>
+                          )}
                           <motion.button 
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
@@ -505,7 +661,7 @@ export default function Invoices() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden"
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -519,55 +675,30 @@ export default function Invoices() {
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs text-slate-400 font-medium uppercase">Status</p>
-                  <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full mt-1 ${
-                    statusStyles[viewInvoice.status?.toLowerCase()]?.bg || 'bg-slate-100'
-                  } ${
-                    statusStyles[viewInvoice.status?.toLowerCase()]?.text || 'text-slate-600'
-                  }`}>{viewInvoice.status}</span>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs text-slate-400 font-medium uppercase">Total Amount</p>
-                  <p className="text-xl font-bold text-indigo-600 mt-1">₹{viewInvoice.totalAmount?.toLocaleString()}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Issue Date</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(viewInvoice.issueDate).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Due Date</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(viewInvoice.dueDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Subtotal</p>
-                  <p className="text-sm font-semibold text-gray-800">₹{viewInvoice.subtotal?.toLocaleString() || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Tax ({viewInvoice.taxRate}%)</p>
-                  <p className="text-sm font-semibold text-gray-800">₹{viewInvoice.taxAmount?.toLocaleString() || '—'}</p>
-                </div>
-              </div>
-              {viewInvoice.notes && (
-                <div className="bg-amber-50 rounded-xl p-3">
-                  <p className="text-xs text-amber-600 font-medium uppercase">Notes</p>
-                  <p className="text-sm text-amber-800 mt-1">{viewInvoice.notes}</p>
-                </div>
-              )}
+            <div className="px-6 py-4 max-h-[70vh] overflow-y-auto bg-slate-50">
+               <DynamicTemplate html={templateHtml} data={viewInvoice} />
             </div>
 
             {/* Modal Footer */}
             <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
               <button
+                onClick={handleDownloadPDF}
+                className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all flex items-center gap-2"
+              >
+                <Download size={14} /> Download PDF
+              </button>
+              <button
                 onClick={() => setViewInvoice(null)}
                 className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-white transition-all"
               >Close</button>
+              {viewInvoice.status?.toLowerCase() !== 'paid' && (
+                <button
+                  onClick={() => handleAction('markPaid', viewInvoice)}
+                  className="px-4 py-2 text-sm font-bold text-white bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-all flex items-center gap-2"
+                >
+                  <CheckCircle size={14} /> Mark as Paid
+                </button>
+              )}
               <button
                 onClick={() => {
                   handleAction('delete', viewInvoice);

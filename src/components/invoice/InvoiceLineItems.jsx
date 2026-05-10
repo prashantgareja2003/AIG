@@ -40,7 +40,7 @@ export default function InvoiceLineItems({ items, onChange }) {
       <div className="hidden md:grid grid-cols-12 gap-4 px-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
         <div className="col-span-5">Description</div>
         <div className="col-span-2">Quantity</div>
-        <div className="col-span-2">Rate ($)</div>
+        <div className="col-span-2">Rate (₹)</div>
         <div className="col-span-2 text-right">Amount</div>
         <div className="col-span-1"></div>
       </div>
@@ -106,9 +106,9 @@ export default function InvoiceLineItems({ items, onChange }) {
 
                 {/* Rate */}
                 <div className="col-span-1 md:col-span-2">
-                  <div className="md:hidden text-xs font-medium text-slate-500 mb-1">Rate ($)</div>
+                  <div className="md:hidden text-xs font-medium text-slate-500 mb-1">Rate (₹)</div>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
                     <input
                       type="number"
                       min="0"
@@ -124,7 +124,7 @@ export default function InvoiceLineItems({ items, onChange }) {
                 <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-end">
                   <div className="md:hidden text-xs font-medium text-slate-500">Amount</div>
                   <span className="font-mono text-sm font-bold text-slate-900">
-                    ${(item.quantity * item.rate).toFixed(2)}
+                    ₹{(item.quantity * item.rate).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
@@ -174,7 +174,7 @@ export default function InvoiceLineItems({ items, onChange }) {
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-slate-600">Total Amount</span>
             <span className="text-xl font-bold text-indigo-600 font-mono">
-              ${totalAmount.toFixed(2)}
+              ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
         </motion.div>

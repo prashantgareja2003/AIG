@@ -2,8 +2,39 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { DollarSign, Clock, FileText, AlertCircle, Plus, Sparkles, UserPlus, Layout } from "lucide-react";
 import RevenueChart from "../components/dashboard/RevenueChart";
+import { getDashboardStats } from "../services/dashboardService";
+import { toast } from "react-hot-toast";
 
 export default function Dashboard() {
+  const [stats, setStats] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await getDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!stats) return null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -17,35 +48,35 @@ export default function Dashboard() {
         <StatsCard
           icon={DollarSign}
           label="Total Revenue"
-          value="$10,000"
-          subtitle="From 1 paid invoices"
+          value={`₹${stats.summary.totalRevenue.toLocaleString()}`}
+          subtitle={`From ${stats.summary.totalInvoices} invoices`}
           color="indigo"
         />
         <StatsCard
           icon={Clock}
           label="Pending"
-          value="2"
-          subtitle="$24,410 outstanding"
+          value={stats.summary.pendingAmount > 0 ? `₹${stats.summary.pendingAmount.toLocaleString()}` : "₹0"}
+          subtitle="Outstanding balance"
           color="amber"
         />
         <StatsCard
           icon={FileText}
-          label="Total Invoices"
-          value="5"
-          subtitle="All time"
+          label="Total Clients"
+          value={stats.summary.totalClients}
+          subtitle="Across all time"
           color="emerald"
         />
         <StatsCard
           icon={AlertCircle}
           label="Overdue"
-          value="1"
-          subtitle="Needs attention"
+          value={stats.summary.overdueCount}
+          subtitle="Invoices past due date"
           color="rose"
         />
       </div>
 
       {/* Revenue Chart Section */}
-      <RevenueChart />
+      <RevenueChart data={stats.monthlyData} />
 
       {/* Quick Actions */}
       <div>
@@ -66,9 +97,22 @@ export default function Dashboard() {
         </div>
         
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-          <InvoiceRow number="681" client="Acme Corporation" date="Mar 1" amount="$19,000.00" status="Paid" />
-          <InvoiceRow number="682" client="TechStart Solutions" date="Mar 5" amount="$5,400.00" status="Pending" />
-          <InvoiceRow number="683" client="Global Ventures Ltd" date="Mar 10" amount="$12,750.00" status="Paid" />
+          {stats.recentInvoices.length > 0 ? (
+            stats.recentInvoices.map((invoice) => (
+              <InvoiceRow 
+                key={invoice.id}
+                number={invoice.invoiceNumber}
+                client={invoice.clientName}
+                date={new Date(invoice.issueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                amount={`₹${invoice.totalAmount.toLocaleString()}`}
+                status={invoice.status}
+              />
+            ))
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              No recent invoices found.
+            </div>
+          )}
         </div>
       </div>
     </div>

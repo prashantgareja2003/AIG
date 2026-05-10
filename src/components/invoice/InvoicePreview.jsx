@@ -76,9 +76,9 @@ const InvoicePreview = forwardRef(function InvoicePreview({ formData, items, tax
                 <tr key={idx} className="text-sm">
                   <td className="py-3 md:py-4 text-slate-800">{item.description || "—"}</td>
                   <td className="py-3 md:py-4 text-center text-slate-500 font-mono">{item.quantity}</td>
-                  <td className="py-3 md:py-4 text-right text-slate-500 font-mono">${item.rate.toFixed(2)}</td>
+                  <td className="py-3 md:py-4 text-right text-slate-500 font-mono">₹{item.rate.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
                   <td className="py-3 md:py-4 text-right font-bold text-slate-900 font-mono">
-                    ${(item.quantity * item.rate).toFixed(2)}
+                    ₹{(item.quantity * item.rate).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               ))}
@@ -97,20 +97,20 @@ const InvoicePreview = forwardRef(function InvoicePreview({ formData, items, tax
         <div className="w-full sm:w-64 md:w-72 space-y-2 md:space-y-2.5">
           <div className="flex justify-between text-xs md:text-sm text-slate-500">
             <span>Subtotal</span>
-            <span className="font-mono font-bold text-slate-700">${subtotal.toFixed(2)}</span>
+            <span className="font-mono font-bold text-slate-700">₹{subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
           </div>
           
           {discount > 0 && (
             <div className="flex justify-between text-xs md:text-sm text-rose-500">
               <span>Discount ({discount}%)</span>
-              <span className="font-mono">-${discountAmount.toFixed(2)}</span>
+              <span className="font-mono">-₹{discountAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
             </div>
           )}
 
           {taxRate > 0 && (
             <div className="flex justify-between text-xs md:text-sm text-slate-500">
               <span>Tax ({taxRate}%)</span>
-              <span className="font-mono">+${taxAmount.toFixed(2)}</span>
+              <span className="font-mono">+₹{taxAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
             </div>
           )}
 
@@ -119,7 +119,7 @@ const InvoicePreview = forwardRef(function InvoicePreview({ formData, items, tax
           <div className="flex justify-between items-center">
             <span className="text-base md:text-lg font-bold text-slate-900">Total</span>
             <span className="text-xl md:text-2xl font-bold font-mono text-indigo-600">
-              ${total.toFixed(2)}
+              ₹{total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
         </div>

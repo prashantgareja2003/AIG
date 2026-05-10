@@ -119,13 +119,13 @@ export default function Settings() {
       case "profile":
         return (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+            <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-gray-100 text-center sm:text-left">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg shrink-0">
                 {data.name ? data.name[0].toUpperCase() : "?"}
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">{data.name}</h3>
-                <p className="text-sm text-gray-500">{data.email}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-bold text-gray-800 truncate">{data.name}</h3>
+                <p className="text-sm text-gray-500 truncate">{data.email}</p>
               </div>
             </div>
 
@@ -222,7 +222,7 @@ export default function Settings() {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-5xl h-[85vh] bg-white rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] md:w-[90vw] max-w-5xl h-[90vh] md:h-[85vh] bg-white rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col"
           >
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <div>
@@ -239,8 +239,8 @@ export default function Settings() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-hidden flex">
-              <div className="w-64 border-r border-gray-100 p-4 overflow-y-auto bg-gray-50/50">
+            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+              <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-100 p-2 md:p-4 overflow-x-auto md:overflow-y-auto bg-gray-50/50 flex md:block whitespace-nowrap md:whitespace-normal no-scrollbar">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   const getColorClass = (color, type) => {
@@ -257,7 +257,7 @@ export default function Settings() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mb-1 ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all md:mb-1 shrink-0 ${
                         activeTab === tab.id
                           ? `${getColorClass(tab.color, "bg")} ${getColorClass(tab.color, "text")} shadow-sm`
                           : "text-gray-600 hover:bg-gray-100"
