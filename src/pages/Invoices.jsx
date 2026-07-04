@@ -1,13 +1,37 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Search, Download, Plus,
+  Search, Download, Plus, Mail,
   ChevronLeft, ChevronRight,
   Eye, Trash2, X,
   CheckCircle, Clock, AlertCircle, FileText, DollarSign
 } from "lucide-react";
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+
+const numberToWords = (num) => {
+  if (!num || num === 0) return "Zero Rupees Only";
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  const convertToWords = (n) => {
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
+    if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + convertToWords(n % 100) : "");
+    if (n < 100000) return convertToWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + convertToWords(n % 1000) : "");
+    if (n < 10000000) return convertToWords(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + convertToWords(n % 100000) : "");
+    return convertToWords(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + convertToWords(n % 10000000) : "");
+  };
+  
+  const rupees = Math.floor(num);
+  const paise = Math.round((num - rupees) * 100);
+  let words = convertToWords(rupees) + " Rupees";
+  if (paise > 0) {
+    words += " and " + convertToWords(paise) + " Paise";
+  }
+  return words + " Only";
+};
 
 const DynamicTemplate = ({ html, data, items }) => {
   if (!html) return <div className="p-10 text-center text-slate-400 italic">Rendering invoice...</div>;
@@ -32,6 +56,7 @@ const DynamicTemplate = ({ html, data, items }) => {
     modeOfDelivery: data.modeOfDelivery || "N/A",
     stateCode: data.stateCode || "N/A",
     hsnCode: data.hsnCode || "N/A",
+    taxableAmount: (data.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
     subtotal: (data.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
     taxRate: data.taxRate || 0,
     taxAmount: (data.taxAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
@@ -41,14 +66,18 @@ const DynamicTemplate = ({ html, data, items }) => {
     cgstAmount: ((data.taxAmount || 0) / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
     discountAmount: (data.discount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
     total: (data.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-    amountInWords: data.amountInWords || "Zero Rupees Only",
+    amountInWords: numberToWords(data.totalAmount),
     notes: data.notes || ""
   };
 
   Object.keys(fields).forEach(key => {
     const regex = new RegExp(`{{${key}}}`, 'g');
-    renderedHtml = renderedHtml.replace(regex, fields[key]);
+    const value = fields[key] === undefined || fields[key] === null ? "" : fields[key];
+    renderedHtml = renderedHtml.replace(regex, value);
   });
+
+  // Ensure Rupee symbol is correctly rendered
+  renderedHtml = renderedHtml.replace(/\u20B9/g, '&#8377;');
 
   const itemRegex = /{{#items}}([\s\S]*?){{\/items}}/g;
   renderedHtml = renderedHtml.replace(itemRegex, (match, content) => {
@@ -102,6 +131,118 @@ export default function Invoices() {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
   const itemsPerPage = 10;
+
+  // Bulk Email State
+  const [showBulkEmailModal, setShowBulkEmailModal] = useState(false);
+  const [bulkEmails, setBulkEmails] = useState([]);
+  const [emailInput, setEmailInput] = useState("");
+  const [bulkSubject, setBulkSubject] = useState("");
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState("");
+  const [sendingBulk, setSendingBulk] = useState(false);
+
+  const handleInvoiceChange = (id) => {
+    setSelectedInvoiceId(id);
+    if (!id) {
+      setBulkSubject("Important Invoicing Update");
+      setBulkMessage("Dear Clients,\n\nPlease find attached the invoice updates.\n\nWarm regards,\nShivShakti Enterprise");
+      return;
+    }
+    const inv = allInvoices.find(i => i.id === parseInt(id) || i.id === id);
+    if (inv) {
+      setBulkSubject(`Invoice ${inv.invoiceNumber} from ShivShakti Enterprise`);
+      setBulkMessage(`Hello ${inv.clientName},\n\nPlease find attached details for invoice ${inv.invoiceNumber}.\n\nInvoice Number: ${inv.invoiceNumber}\nTotal Amount: INR ${inv.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\nDue Date: ${new Date(inv.dueDate).toLocaleDateString('en-IN')}\n\nThank you for your business!`);
+      if (inv.clientEmail && !bulkEmails.includes(inv.clientEmail)) {
+        setBulkEmails(prev => [...new Set([...prev, inv.clientEmail])]);
+      }
+    }
+  };
+
+  const handleAddEmail = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const email = emailInput.trim().replace(/,$/, '');
+      if (!email) return;
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error("Please enter a valid email address");
+        return;
+      }
+      
+      if (bulkEmails.includes(email)) {
+        toast.error("Email already added");
+        return;
+      }
+      
+      setBulkEmails(prev => [...prev, email]);
+      setEmailInput("");
+    }
+  };
+
+  const triggerAddEmail = () => {
+    const email = emailInput.trim();
+    if (!email) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    if (bulkEmails.includes(email)) {
+      toast.error("Email already added");
+      return;
+    }
+    setBulkEmails(prev => [...prev, email]);
+    setEmailInput("");
+  };
+
+  const handleRemoveEmail = (emailToRemove) => {
+    setBulkEmails(prev => prev.filter(email => email !== emailToRemove));
+  };
+
+  const handleSendBulkEmail = async (e) => {
+    e.preventDefault();
+    if (bulkEmails.length === 0) {
+      toast.error("Please add at least one recipient email");
+      return;
+    }
+    if (!selectedInvoiceId) {
+      toast.error("Please select an invoice to link");
+      return;
+    }
+    if (!bulkSubject.trim()) {
+      toast.error("Please enter a subject");
+      return;
+    }
+    if (!bulkMessage.trim()) {
+      toast.error("Please enter a message");
+      return;
+    }
+
+    setSendingBulk(true);
+    try {
+      const { apiPost } = await import('../api.js');
+      const response = await apiPost('/invoices/send-bulk-email', {
+        emails: bulkEmails,
+        subject: bulkSubject,
+        message: bulkMessage,
+        invoiceId: parseInt(selectedInvoiceId)
+      });
+
+      toast.success(response.message || "Bulk emails sent successfully!");
+      setShowBulkEmailModal(false);
+      setBulkEmails([]);
+      setEmailInput("");
+      setBulkSubject("");
+      setBulkMessage("");
+      setSelectedInvoiceId("");
+    } catch (error) {
+      console.error("Failed to send bulk emails:", error);
+      toast.error(error.message || "Failed to send bulk emails");
+    } finally {
+      setSendingBulk(false);
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
@@ -176,36 +317,28 @@ export default function Invoices() {
   const handleAction = async (action, invoice) => {
     switch(action) {
       case "view":
-        setViewInvoice(invoice);
-        setTemplateHtml(null);
-        if (invoice.templateId) {
-            try {
-                const { apiGet } = await import('../api.js');
-                const data = await apiGet(`/templates/${invoice.templateId}`);
-                setTemplateHtml(data.htmlContent);
-            } catch (err) {
-                console.error("Failed to load template", err);
-            }
+        try {
+          const { apiGet } = await import('../api.js');
+          // Fetch full invoice details including items, subtotal, etc.
+          const fullInvoice = await apiGet(`/invoices/${invoice.id}`);
+          setViewInvoice(fullInvoice);
+          setTemplateHtml(null);
+          
+          if (fullInvoice.templateId) {
+              const data = await apiGet(`/templates/${fullInvoice.templateId}`);
+              setTemplateHtml(data.htmlContent);
+          }
+        } catch (err) {
+          console.error("Failed to load invoice details", err);
+          toast.error("Could not load invoice details");
         }
         break;
       case "email":
-        Swal.fire({
-          title: 'Send Email?',
-          text: `Are you sure you want to send invoice ${invoice.invoiceNumber} to ${invoice.clientEmail}?`,
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonColor: '#4f46e5',
-          cancelButtonColor: '#9ca3af',
-          confirmButtonText: 'Yes, send it!'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            Swal.fire(
-              'Sent!',
-              `Invoice ${invoice.invoiceNumber} has been sent to ${invoice.clientEmail}.`,
-              'success'
-            );
-          }
-        });
+        setSelectedInvoiceId(invoice.id);
+        setBulkEmails([invoice.clientEmail]);
+        setBulkSubject(`Invoice ${invoice.invoiceNumber} from ShivShakti Enterprise`);
+        setBulkMessage(`Hello ${invoice.clientName},\n\nPlease find attached details for invoice ${invoice.invoiceNumber}.\n\nInvoice Number: ${invoice.invoiceNumber}\nTotal Amount: INR ${invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\nDue Date: ${new Date(invoice.dueDate).toLocaleDateString('en-IN')}\n\nThank you for your business!`);
+        setShowBulkEmailModal(true);
         break;
       case "print":
         toast.success(`Printing invoice ${invoice.invoiceNumber}`);
@@ -341,7 +474,7 @@ export default function Invoices() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-indigo-100 text-sm">Total Revenue</p>
-              <p className="text-2xl font-bold mt-1">₹{stats.totalRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold mt-1">{"\u20B9"}{stats.totalRevenue.toLocaleString()}</p>
               <p className="text-indigo-200 text-xs mt-1">From {stats.total} invoices</p>
             </div>
             <DollarSign size={32} className="text-indigo-200" />
@@ -357,7 +490,7 @@ export default function Invoices() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Paid Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">₹{stats.paidRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{"\u20B9"}{stats.paidRevenue.toLocaleString()}</p>
               <p className="text-emerald-600 text-xs mt-1">From {stats.paid} invoices</p>
             </div>
             <CheckCircle size={32} className="text-emerald-500" />
@@ -374,7 +507,7 @@ export default function Invoices() {
             <div>
               <p className="text-gray-500 text-sm">Pending Amount</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                ₹{allInvoices.filter(i => i.status.toLowerCase() === "pending").reduce((sum, i) => sum + i.totalAmount, 0).toLocaleString()}
+                {"\u20B9"}{allInvoices.filter(i => i.status.toLowerCase() === "pending").reduce((sum, i) => sum + i.totalAmount, 0).toLocaleString()}
               </p>
               <p className="text-amber-600 text-xs mt-1">{stats.pending} pending invoices</p>
             </div>
@@ -405,14 +538,31 @@ export default function Invoices() {
           <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
           <p className="text-gray-500 text-sm mt-1">Manage and track all your invoices</p>
         </div>
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => (window.location.href = "/dashboard/create")}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-indigo-200"
-        >
-          <Plus size={18} /> Create New Invoice
-        </motion.button>
+        <div className="flex items-center gap-3">
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              setSelectedInvoiceId("");
+              setBulkEmails([]);
+              setBulkSubject("Important Invoicing Update");
+              setBulkMessage("Dear Clients,\n\nPlease find attached the invoice updates.\n\nWarm regards,\nShivShakti Enterprise");
+              setShowBulkEmailModal(true);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-indigo-600 border border-indigo-200 text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-50/50 hover:border-indigo-300"
+          >
+            <Mail size={18} /> Send Bulk Email
+          </motion.button>
+
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => (window.location.href = "/dashboard/create")}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-200 border border-rose-900/10"
+          >
+            <Plus size={18} /> Create New Invoice
+          </motion.button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -537,7 +687,7 @@ export default function Invoices() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-gray-900">₹{inv.totalAmount.toLocaleString()}</span>
+                        <span className="text-sm font-bold text-gray-900">{"\u20B9"}{inv.totalAmount.toLocaleString()}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold ${style.bg} ${style.text}`}>
@@ -709,6 +859,161 @@ export default function Invoices() {
                 <Trash2 size={14} /> Delete
               </button>
             </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {showBulkEmailModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setShowBulkEmailModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100">
+                  <Mail size={22} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Send Bulk Invoice Emails</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">Send styled HTML invoice notifications to multiple clients</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowBulkEmailModal(false)} 
+                className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-all"
+              >
+                <X size={18} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSendBulkEmail} className="p-8 space-y-6">
+              {/* Email Tag Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Recipient Emails <span className="text-gray-400 font-normal">(Press Enter or Comma to add)</span>
+                </label>
+                <div className="min-h-[100px] p-3 bg-slate-50 border border-gray-200 rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all flex flex-wrap gap-2 items-start content-start">
+                  <AnimatePresence>
+                    {bulkEmails.map((email) => (
+                      <motion.span
+                        key={email}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-100/50 hover:bg-indigo-100/70 transition-all"
+                      >
+                        {email}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEmail(email)}
+                          className="hover:bg-indigo-200/50 p-0.5 rounded-full transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </motion.span>
+                    ))}
+                  </AnimatePresence>
+                  <input
+                    type="text"
+                    placeholder={bulkEmails.length === 0 ? "Type client email and press Enter..." : "Add more..."}
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    onKeyDown={handleAddEmail}
+                    onBlur={triggerAddEmail}
+                    className="flex-1 min-w-[150px] bg-transparent outline-none py-1 text-sm text-gray-800 placeholder-gray-400"
+                  />
+                </div>
+                {bulkEmails.length > 0 && (
+                  <p className="text-xs text-indigo-500 mt-2 font-medium">
+                    {bulkEmails.length} recipient{bulkEmails.length > 1 ? 's' : ''} added
+                  </p>
+                )}
+              </div>
+
+              {/* Invoice Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Link to Invoice Details</label>
+                <select
+                  value={selectedInvoiceId}
+                  onChange={(e) => handleInvoiceChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-gray-200 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer font-medium"
+                >
+                  <option value="">-- Select an Invoice (Required) --</option>
+                  {allInvoices.map((inv) => (
+                    <option key={inv.id} value={inv.id}>
+                      {inv.invoiceNumber} - {inv.clientName} (INR {inv.totalAmount.toLocaleString('en-IN')})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Subject</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Invoice Details from Company"
+                  value={bulkSubject}
+                  onChange={(e) => setBulkSubject(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-gray-200 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                />
+              </div>
+
+              {/* Message Body */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Custom Message</label>
+                <textarea
+                  required
+                  rows={5}
+                  placeholder="Type your message here..."
+                  value={bulkMessage}
+                  onChange={(e) => setBulkMessage(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-gray-200 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium resize-none"
+                />
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkEmailModal(false)}
+                  className="px-5 py-2.5 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition-all"
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={sendingBulk}
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-100/50 hover:shadow-indigo-200/50 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {sendingBulk ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Sending Emails...
+                    </>
+                  ) : (
+                    <>
+                      <Mail size={16} /> Send Emails
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </form>
           </motion.div>
         </motion.div>
       )}

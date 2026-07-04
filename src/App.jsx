@@ -11,6 +11,7 @@ import Logout from "./pages/Logout";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ResetPassword from "./pages/ResetPassword";
 import MagicCreate from "./pages/MagicCreate";
 import Templates from "./pages/Templates";
 
@@ -71,6 +72,14 @@ function App() {
             isAuthenticated ? 
             <Navigate to="/dashboard" replace /> : 
             <Signup setIsAuthenticated={setIsAuthenticated} />
+          } 
+        />
+        <Route 
+          path="/reset-password" 
+          element={
+            isAuthenticated ? 
+            <Navigate to="/dashboard" replace /> : 
+            <ResetPassword />
           } 
         />
 

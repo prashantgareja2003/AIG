@@ -14,7 +14,11 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  CreditCard
+  CreditCard,
+  FileText,
+  DollarSign,
+  Clock,
+  User
 } from "lucide-react";
 import { apiGet, apiPost, apiPut, apiDelete } from "../api";
 import toast from "react-hot-toast";
@@ -149,36 +153,6 @@ const ClientFormFields = ({ data, setData }) => (
       </div>
     </div>
 
-    <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-4">
-      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Initial Business History (Optional)</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="space-y-1.5">
-          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Previous Invoices
-          </label>
-          <input
-            type="number"
-            value={data.invoices}
-            onChange={(e) => setData({ ...data, invoices: parseInt(e.target.value) || 0 })}
-            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-medium"
-            placeholder="0"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Total Revenue Generated ($)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={data.totalSpent}
-            onChange={(e) => setData({ ...data, totalSpent: parseFloat(e.target.value) || 0 })}
-            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-medium"
-            placeholder="0.00"
-          />
-        </div>
-      </div>
-    </div>
   </div>
 );
 
@@ -392,7 +366,7 @@ export default function Clients() {
         </div>
         <button
           onClick={openAddModal}
-          className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-100 hover:shadow-xl transition-all"
+          className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-blue-100 hover:shadow-xl transition-all border border-rose-900/10"
         >
           <UserPlus size={16} className="sm:w-[18px] sm:h-[18px]" /> Add Client
         </button>
@@ -564,7 +538,7 @@ export default function Clients() {
           </button>
           <button
             onClick={handleAddClient}
-            className="px-8 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:translate-y-[-2px] active:translate-y-[0px] transition-all"
+            className="px-8 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg shadow-blue-200 hover:shadow-xl hover:translate-y-[-2px] active:translate-y-[0px] transition-all border border-rose-900/10"
           >
             Add Client
           </button>
@@ -619,89 +593,122 @@ export default function Clients() {
 
       {/* View Profile Modal */}
       <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Client Profile" size="md">
-        <div className="space-y-8">
-          <div className="flex items-center gap-6 p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl border border-indigo-100/50">
-            <div className="w-20 h-20 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-indigo-200">
-              {selectedClient?.name.charAt(0)}
+        <div className="space-y-4 font-marcellus">
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Marcellus&display=swap');
+            .font-marcellus { font-family: 'Marcellus', serif; }
+          `}</style>
+          
+          {/* Refined Glass Header with Maroon Border */}
+          <div className="p-5 rounded-2xl glass-light border border-rose-900/20 shadow-sm overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-xl flex items-center justify-center text-2xl font-bold text-white border border-rose-900/10">
+                {selectedClient?.name.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-slate-900 tracking-tight">{selectedClient?.name}</h3>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
+                    selectedClient?.status === 'Active' ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}>
+                    <span className={`w-1 h-1 rounded-full ${selectedClient?.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                    {selectedClient?.status}
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-l border-slate-200 pl-2">
+                    ID: {selectedClient?.id}
+                  </span>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Compact Stats Grid with Maroon Accents */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 rounded-xl glass-light border border-rose-900/15 flex items-center justify-between group hover:border-blue-300 transition-all">
+              <div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[2px] mb-0.5">Invoices</p>
+                <p className="text-xl font-bold text-slate-800">{selectedClient?.invoices}</p>
+              </div>
+              <div className="p-2 bg-blue-50 text-blue-500 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                <FileText size={16} />
+              </div>
+            </div>
+            <div className="p-4 rounded-xl glass-light border border-rose-900/15 flex items-center justify-between group hover:border-emerald-300 transition-all">
+              <div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[2px] mb-0.5">Revenue</p>
+                <p className="text-xl font-bold text-slate-800">₹{selectedClient?.totalSpent?.toLocaleString()}</p>
+              </div>
+              <div className="p-2 bg-emerald-50 text-emerald-500 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+                <DollarSign size={16} />
+              </div>
+            </div>
+          </div>
+
+          {/* Compact Info Section with Maroon Borders */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-4 rounded-xl glass-light border border-rose-900/10 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-blue-50/50 rounded-lg text-blue-500 border border-blue-100"><Mail size={14} /></div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Email</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">{selectedClient?.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-blue-50/50 rounded-lg text-blue-500 border border-blue-100"><Phone size={14} /></div>
+                <div>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Phone</p>
+                  <p className="text-xs font-bold text-slate-700">{selectedClient?.phone || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl glass-light border border-rose-900/10 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-blue-50/50 rounded-lg text-blue-500 border border-blue-100"><CreditCard size={14} /></div>
+                <div>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">GSTIN</p>
+                  <p className="text-xs font-bold text-slate-700">{selectedClient?.gstin || "N/A"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-blue-50/50 rounded-lg text-blue-500 border border-blue-100"><User size={14} /></div>
+                <div>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Contact</p>
+                  <p className="text-xs font-bold text-slate-700">{selectedClient?.contactPerson}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Address Section */}
+          <div className="p-4 rounded-xl glass-light border border-rose-900/10 flex gap-4 items-start shadow-sm">
+            <div className="p-2 bg-rose-50 text-rose-600 rounded-lg border border-rose-100"><MapPin size={14} /></div>
             <div>
-              <h3 className="text-2xl font-bold text-slate-900">{selectedClient?.name}</h3>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`w-2 h-2 rounded-full ${selectedClient?.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-                <p className="text-sm text-slate-500 font-semibold uppercase tracking-wider">{selectedClient?.status} Member</p>
-              </div>
+              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Address</p>
+              <p className="text-xs font-bold text-slate-600 leading-relaxed">{selectedClient?.address || "No address on file"}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-              <div className="p-3 bg-white text-indigo-600 rounded-xl shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                <Mail size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</p>
-                <p className="text-sm font-bold text-slate-700">{selectedClient?.email}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-              <div className="p-3 bg-white text-emerald-600 rounded-xl shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                <CreditCard size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">GSTIN Number</p>
-                <p className="text-sm font-bold text-slate-700">{selectedClient?.gstin || "N/A"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-              <div className="p-3 bg-white text-purple-600 rounded-xl shadow-sm group-hover:bg-purple-600 group-hover:text-white transition-all">
-                <Phone size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phone Number</p>
-                <p className="text-sm font-bold text-slate-700">{selectedClient?.phone || "N/A"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-              <div className="p-3 bg-white text-amber-600 rounded-xl shadow-sm group-hover:bg-amber-600 group-hover:text-white transition-all">
-                <Building2 size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contact Person</p>
-                <p className="text-sm font-bold text-slate-700">{selectedClient?.contactPerson}</p>
-              </div>
-            </div>
+          {/* Compact Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => {
+                setIsViewModalOpen(false);
+                openEditModal(selectedClient);
+              }}
+              className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold rounded-xl hover:shadow-lg hover:shadow-blue-200 transition-all flex items-center justify-center gap-2 border border-rose-900/20"
+            >
+              <Edit2 size={14} /> Edit Profile
+            </button>
+            <button
+              onClick={() => setIsViewModalOpen(false)}
+              className="px-6 py-3 bg-white border border-rose-900/10 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+            >
+              Close
+            </button>
           </div>
-
-          <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-            <div className="p-3 bg-white text-rose-600 rounded-xl shadow-sm group-hover:bg-rose-600 group-hover:text-white transition-all">
-              <MapPin size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Office Address</p>
-              <p className="text-sm font-bold text-slate-700 leading-relaxed mt-1">{selectedClient?.address || "N/A"}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-6 bg-slate-900 rounded-3xl text-center shadow-xl shadow-slate-200">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Invoices</p>
-              <p className="text-3xl font-black text-white">{selectedClient?.invoices}</p>
-            </div>
-            <div className="p-6 bg-indigo-600 rounded-3xl text-center shadow-xl shadow-indigo-200">
-              <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-2">Revenue Generated</p>
-              <p className="text-3xl font-black text-white">₹{selectedClient?.totalSpent?.toLocaleString()}</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsViewModalOpen(false)}
-            className="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all active:scale-[0.98]"
-          >
-            Close Profile
-          </button>
         </div>
       </Modal>
     </div>

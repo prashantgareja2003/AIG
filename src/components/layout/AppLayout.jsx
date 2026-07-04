@@ -115,14 +115,14 @@ export default function AppLayout() {
           {/* Decorative Gradient Blobs */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-indigo-500 rounded-full blur-[100px] animate-pulse" />
-            <div className="absolute top-1/2 -right-32 w-64 h-64 bg-purple-500 rounded-full blur-[100px] animate-pulse delay-1000" />
+            <div className="absolute top-1/2 -right-32 w-64 h-64 bg-blue-500 rounded-full blur-[100px] animate-pulse delay-1000" />
           </div>
 
           <div className="relative h-full flex flex-col z-10">
           {/* Logo */}
           <div className="h-16 flex items-center px-4 border-b border-slate-100">
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md border border-rose-900/10">
                 <FileText className="w-5 h-5 text-white" />
               </div>
               {!collapsed && (
@@ -130,7 +130,7 @@ export default function AppLayout() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent whitespace-nowrap"
+                  className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent whitespace-nowrap"
                 >
                   InvoicePro
                 </motion.span>
@@ -190,7 +190,7 @@ export default function AppLayout() {
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg group-hover:rotate-6 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-lg group-hover:rotate-6 transition-transform border border-rose-900/10">
                       {userData.initials}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
@@ -260,7 +260,7 @@ export default function AppLayout() {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:border-indigo-200 hover:shadow-sm transition-all"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-sm border border-rose-900/10">
                   {userData.initials}
                 </div>
                 <span className="hidden sm:block text-sm font-semibold text-slate-700">
@@ -371,7 +371,7 @@ export default function AppLayout() {
                             className={`
                               flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
                               ${active 
-                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md border border-rose-900/10' 
                                 : 'text-slate-600 hover:bg-slate-100'
                               }
                             `}
@@ -452,7 +452,7 @@ function NavItem({ item, collapsed, active }) {
         {active && (
           <motion.div 
             layoutId="activeTab"
-            className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 z-0"
+            className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg shadow-blue-200 z-0 border border-rose-900/10"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}

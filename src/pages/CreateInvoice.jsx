@@ -34,6 +34,7 @@ const DynamicTemplate = ({ html, data, items }) => {
     modeOfDelivery: data.modeOfDelivery || "N/A",
     stateCode: data.stateCode || "N/A",
     hsnCode: data.hsnCode || "N/A",
+    taxableAmount: data.subtotal,
     subtotal: data.subtotal,
     taxRate: data.taxRate,
     taxAmount: data.taxAmount,
@@ -49,8 +50,12 @@ const DynamicTemplate = ({ html, data, items }) => {
 
   Object.keys(fields).forEach(key => {
     const regex = new RegExp(`{{${key}}}`, 'g');
-    renderedHtml = renderedHtml.replace(regex, fields[key]);
+    const value = fields[key] === undefined || fields[key] === null ? "" : fields[key];
+    renderedHtml = renderedHtml.replace(regex, value);
   });
+
+  // Ensure Rupee symbol is correctly rendered
+  renderedHtml = renderedHtml.replace(/\u20B9/g, '&#8377;');
 
   // Handle items loop (very simple implementation)
   const itemRegex = /{{#items}}([\s\S]*?){{\/items}}/g;
@@ -164,11 +169,12 @@ const CreateInvoicePage = () => {
     fetchTemplate();
 
     if (location.state?.parsedData) {
-      const { clientName, amount, taxRate } = location.state.parsedData;
+      const { clientName, amount, taxRate, discount } = location.state.parsedData;
       setFormData(prev => ({
         ...prev,
         clientName: clientName || prev.clientName,
         taxRate: taxRate || prev.taxRate,
+        discount: discount || prev.discount,
       }));
       if (amount) {
         setItems([{
@@ -373,9 +379,9 @@ const CreateInvoicePage = () => {
           </button>
           
           <button
-            onClick={handleSave}
+            onClick={() => handleSave("Pending")}
             disabled={isSaving}
-            className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-bold hover:shadow-lg transition-all flex items-center gap-2"
+            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-bold hover:shadow-lg transition-all flex items-center gap-2 border border-rose-900/10"
           >
             {isSaving ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -507,9 +513,9 @@ const CreateInvoicePage = () => {
 
               {/* Invoice Details */}
               <div className="glass rounded-2xl overflow-hidden border border-gray-200">
-                <div className="px-5 py-4 bg-purple-500/5 border-b border-gray-100">
+                <div className="px-5 py-4 bg-blue-500/5 border-b border-gray-100">
                   <div className="flex items-center gap-2">
-                    <CreditCard size={18} className="text-purple-600" />
+                    <CreditCard size={18} className="text-blue-600" />
                     <h3 className="font-semibold text-gray-800">Invoice Details</h3>
                   </div>
                 </div>
@@ -630,7 +636,7 @@ const CreateInvoicePage = () => {
                             className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                           <div className="flex items-center justify-end px-3 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700">
-                            ₹{formatNumber(item.quantity * item.rate)}
+                            {"\u20B9"}{formatNumber(item.quantity * item.rate)}
                           </div>
                         </div>
                       </div>
@@ -662,21 +668,21 @@ const CreateInvoicePage = () => {
                     <div className="space-y-2 border-t border-gray-100 pt-4">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Subtotal:</span>
-                        <span className="font-medium">₹{formatNumber(calculateSubtotal())}</span>
+                        <span className="font-medium">{"\u20B9"}{formatNumber(calculateSubtotal())}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Tax ({formData.taxRate}%):</span>
-                        <span className="font-medium">₹{formatNumber(calculateTax())}</span>
+                        <span className="font-medium">{"\u20B9"}{formatNumber(calculateTax())}</span>
                       </div>
                       {formData.discount > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Discount ({formData.discount}%):</span>
-                          <span className="text-red-600">-₹{formatNumber(calculateDiscount())}</span>
+                          <span className="text-red-600">-{"\u20B9"}{formatNumber(calculateDiscount())}</span>
                         </div>
                       )}
                       <div className="flex justify-between pt-2 border-t-2 border-gray-200">
                         <span className="font-bold text-gray-800 text-lg">Total Amount:</span>
-                        <span className="text-2xl font-bold text-indigo-600">₹{formatNumber(calculateTotal())}</span>
+                        <span className="text-2xl font-bold text-indigo-600">{"\u20B9"}{formatNumber(calculateTotal())}</span>
                       </div>
                     </div>
                   </div>

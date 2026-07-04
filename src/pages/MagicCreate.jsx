@@ -103,7 +103,14 @@ const MagicCreate = () => {
       if (percentMatch) taxRate = parseInt(percentMatch[1], 10);
     }
 
-    return { clientName, amount, taxRate };
+    // Discount extraction
+    let discount = 0;
+    const discountMatch = lowerPrompt.match(/(\d+)%\s*discount/);
+    if (discountMatch) {
+      discount = parseInt(discountMatch[1], 10);
+    }
+
+    return { clientName, amount, taxRate, discount };
   };
 
   const handleGenerate = () => {
@@ -131,7 +138,7 @@ const MagicCreate = () => {
         <div className="inline-flex items-center justify-center p-3 bg-indigo-100 rounded-2xl mb-4">
           <Wand2 className="w-8 h-8 text-indigo-600" />
         </div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
           Magic Create
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
@@ -175,7 +182,7 @@ const MagicCreate = () => {
 
             <button
               onClick={handleGenerate}
-              className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-indigo-500/30 transition-all transform hover:-translate-y-0.5"
+              className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 border border-rose-900/10"
             >
               Generate Invoice
               <ArrowRight className="w-5 h-5" />

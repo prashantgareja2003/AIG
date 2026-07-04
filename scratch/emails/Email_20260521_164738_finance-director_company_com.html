@@ -1,0 +1,145 @@
+﻿<!-- TO: finance-director@company.com -->
+<!-- SUBJECT: Outstanding Payment for Invoice INV-8588 -->
+
+
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Invoice Received</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        .content {
+            padding: 40px 32px;
+        }
+        .content h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: #0f172a;
+        }
+        .custom-message {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #334155;
+            background-color: #f8fafc;
+            border-left: 4px solid #0284c7;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 24px 0;
+            white-space: pre-wrap;
+        }
+        .invoice-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            background-color: #ffffff;
+            margin-top: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        }
+        .invoice-card h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+        .card-row:last-child {
+            margin-bottom: 0;
+            padding-top: 12px;
+            border-top: 1px dashed #e2e8f0;
+        }
+        .label {
+            color: #64748b;
+        }
+        .value {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .total-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0369a1;
+        }
+        .footer {
+            padding: 24px 32px;
+            background-color: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>New Invoice Shared</h1>
+        </div>
+        <div class='content'>
+            <h2>Dear customer,</h2>
+            <p>An invoice has been shared with you from <strong>AI Invoice Generator</strong>. Please find the details below.</p>
+            
+            <div class='custom-message'>
+                Dear team, please find attached the details of invoice INV-8588 amounting to INR 54,000 due by 2026-06-05. Please clear the dues.
+            </div>
+
+            <div class='invoice-card'>
+                <h3>Invoice Details</h3>
+                <div class='card-row'>
+                    <span class='label'>Invoice Number</span>
+                    <span class='value'>INV-8588</span>
+                </div>
+                <div class='card-row'>
+                    <span class='label'>Client Name</span>
+                    <span class='value'>Premium Client Pvt Ltd</span>
+                </div>
+                <div class='card-row'>
+                    <span class='label'>Total Amount Due</span>
+                    <span class='value total-value'>&#8377;54,000.00</span>
+                </div>
+            </div>
+        </div>
+        <div class='footer'>
+            <p>Thank you for doing business with us!</p>
+            <p>&copy; 2026 AI Invoice Generator. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

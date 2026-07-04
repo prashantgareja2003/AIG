@@ -51,7 +51,7 @@ const LandingPage = () => {
       {/* Background blobs for glass effect */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] animate-blob"></div>
-        <div className="absolute top-[30%] right-[-10%] w-[35%] h-[35%] bg-purple-500/10 blur-[120px] animate-blob animation-delay-2000"></div>
+        <div className="absolute top-[30%] right-[-10%] w-[35%] h-[35%] bg-blue-500/10 blur-[120px] animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] animate-blob animation-delay-4000"></div>
       </div>
       
@@ -215,7 +215,7 @@ const LandingPage = () => {
               className="relative"
             >
               <div className="glass rounded-2xl p-6 relative overflow-hidden group hover:scale-[1.01] transition-all duration-500">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-600/10 rounded-2xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-600/10 rounded-2xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
                 
                 <div className="relative space-y-5">
                   <div className="flex justify-between items-center pb-4 border-b border-gray-100">

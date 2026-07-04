@@ -57,7 +57,7 @@ export default function Templates() {
               {/* Template Preview Area */}
               <div className={`h-64 ${template.previewBg || 'bg-slate-50'} p-4 flex items-center justify-center relative overflow-hidden`}>
                 {/* Background accent */}
-                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${template.color || 'from-indigo-500 to-purple-600'}`}></div>
+                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${template.color || 'from-blue-500 to-indigo-600'}`}></div>
                 
                 <div className="w-full max-w-[240px] h-full shadow-lg transform group-hover:scale-105 transition-transform duration-500 ease-out bg-white rounded border border-gray-100 p-2 overflow-hidden">
                    {template.thumbnail ? (
